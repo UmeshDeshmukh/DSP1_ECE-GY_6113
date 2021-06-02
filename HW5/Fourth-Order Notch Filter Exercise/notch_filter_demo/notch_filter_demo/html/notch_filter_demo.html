@@ -1,0 +1,340 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Notch filtering of tonal noise</title><meta name="generator" content="MATLAB 9.8"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-03-05"><meta name="DC.source" content="notch_filter_demo.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Notch filtering of tonal noise</h1><!--introduction--><p>Null out tonal noise in a noisy speech signal. Compare second-order FIR and IIR filters.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Load data</a></li><li><a href="#3">Plot waveforms</a></li><li><a href="#5">Make FIR notch filter</a></li><li><a href="#6">Display FIR pole-zero diagram</a></li><li><a href="#7">Display FIR frequency response</a></li><li><a href="#10">Apply FIR filter to noisy speech</a></li><li><a href="#11">Make IIR notch filter</a></li><li><a href="#12">Display IIR pole-zero diagram</a></li><li><a href="#13">Display IIR frequency response</a></li><li><a href="#14">Apply IIR filter to noisy speech</a></li><li><a href="#15">Compare FIR and IIR filtered signals</a></li><li><a href="#16">Export audio signals as wave files</a></li></ul></div><h2 id="1">Load data</h2><pre class="codeinput">clear
+
+[s, Fs] = audioread(<span class="string">'clean.wav'</span>);     <span class="comment">% speech signal</span>
+
+[x, Fs] = audioread(<span class="string">'noisy.wav'</span>);     <span class="comment">% speech signal with tonal noise</span>
+</pre><pre class="codeinput">sound(x, Fs)
+</pre><h2 id="3">Plot waveforms</h2><pre class="codeinput">N = length(x);
+t = (0:N-1)'/Fs;            <span class="comment">% t : time axis</span>
+
+figure(1)
+clf
+plot(t, s, t, x-0.1)
+legend(<span class="string">'Clean speech'</span>, <span class="string">'Speech with tonal noise'</span>)
+xlabel(<span class="string">'Time (sec)'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_01.png" alt=""> <p>plot detail</p><pre class="codeinput">figure(1)
+clf
+plot(t, s, t, x-0.1)
+xlim([0.5 0.9])
+legend(<span class="string">'Clean speech'</span>, <span class="string">'Speech with tonal noise'</span>)
+xlabel(<span class="string">'Time (sec)'</span>)
+
+orient <span class="string">landscape</span>
+print <span class="string">-dpdf</span> <span class="string">data</span>
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_02.png" alt=""> <h2 id="5">Make FIR notch filter</h2><pre class="codeinput">fn = 500;          <span class="comment">% frequency to null out</span>
+
+I = sqrt(-1);
+
+b = [1 -2*cos(2*pi*fn/Fs) 1];               <span class="comment">% filter coefficients</span>
+a = 1;
+
+b = b/polyval(b, -1);           <span class="comment">% make peak gain = 1</span>
+<span class="comment">% b = b/sum(b);               % make dc gain = 1</span>
+</pre><h2 id="6">Display FIR pole-zero diagram</h2><p>The zeros are on the unit circle at angle 2*pi*fn/Fs.</p><pre class="codeinput">figure(1)
+clf
+zplane(b, a)
+title(<span class="string">'FIR notch filter'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_03.png" alt=""> <h2 id="7">Display FIR frequency response</h2><pre class="codeinput">[H, om] = freqz(b, a);
+</pre><p>Display frequency response (normalized frequency)</p><pre class="codeinput">figure(3)
+clf
+plot(om/(2*pi), abs(H))
+xlabel(<span class="string">'Normalized frequency (cycles/sample)'</span>)
+title(<span class="string">'Frequency response'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_04.png" alt=""> <p>Display frequency response (Hz)</p><pre class="codeinput">figure(3)
+clf
+plot(om/(2*pi)*Fs, abs(H))
+xlabel(<span class="string">'Frequency (cycles/second = Hz)'</span>)
+title(<span class="string">'Frequency response'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_05.png" alt=""> <h2 id="10">Apply FIR filter to noisy speech</h2><p>The filter suppresses tonal noise, but it also attenuates the speech waveform, leading to distortion. That is because the notch is vey wide.</p><pre class="codeinput">y = filter(b, a, x);
+
+figure(1)
+clf
+plot(t, x, t,  y - 0.1)
+xlim([0.5 0.7])
+legend(<span class="string">'Noisy signal'</span>, <span class="string">'Filtered (FIR)'</span>)
+xlabel(<span class="string">'Time (sec)'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_06.png" alt=""> <h2 id="11">Make IIR notch filter</h2><p>Put poles at same angle, inside unit circle.</p><pre class="codeinput">b = [1 -2*cos(2*pi*fn/Fs) 1];        <span class="comment">% filter coefficients</span>
+
+r = 0.95;
+a = [1 -2*r*cos(2*pi*fn/Fs) r^2];    <span class="comment">% filter coefficients</span>
+
+b = b/sum(b)*sum(a);                 <span class="comment">% make dc gain equal to 1</span>
+</pre><h2 id="12">Display IIR pole-zero diagram</h2><pre class="codeinput">figure(1)
+clf
+zplane(b, a)
+title(<span class="string">'IIR notch filter'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_07.png" alt=""> <h2 id="13">Display IIR frequency response</h2><p>The notch is quite narrow, not like the FIR filter. Now, the filter will attenuate fewer frequencies.</p><pre class="codeinput">[H, om] = freqz(b, a);
+
+figure(2)
+clf
+plot(om/(2*pi)*Fs, abs(H))
+xlabel(<span class="string">'Frequency (Hz)'</span>)
+title(<span class="string">'Frequency response (IIR) filter'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_08.png" alt=""> <h2 id="14">Apply IIR filter to noisy speech</h2><pre class="codeinput">y2 = filter(b, a, x);
+
+figure(1)
+clf
+plot(t, x, t,  y2 - 0.1)
+legend(<span class="string">'Noisy signal'</span>, <span class="string">'Filtered (IIR)'</span>)
+<span class="comment">% xlim([0.5 0.7])</span>
+xlabel(<span class="string">'Time (sec)'</span>)
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_09.png" alt=""> <h2 id="15">Compare FIR and IIR filtered signals</h2><p>The output of the IIR filter preserves the shape of the speech waveform better than the FIR filter.</p><pre class="codeinput">figure(1)
+clf
+plot(t, s+0.1, t, x, t,  y - 0.1, t, y2 - 0.2)
+xlim([0.5 0.7])
+legend(<span class="string">'Clean signal'</span>,<span class="string">'Noisy signal'</span>, <span class="string">'Filtered (FIR)'</span>, <span class="string">'Filtered (IIR)'</span>)
+xlabel(<span class="string">'Time (sec)'</span>)
+title(<span class="string">'Tonal noise suppression by notch filtering'</span>)
+
+orient <span class="string">tall</span>
+print <span class="string">-dpdf</span> <span class="string">signals</span>
+</pre><img vspace="5" hspace="5" src="notch_filter_demo_10.png" alt=""> <h2 id="16">Export audio signals as wave files</h2><pre class="codeinput">audiowrite(<span class="string">'output_FIR.wav'</span>, y, Fs);
+audiowrite(<span class="string">'output_IIR.wav'</span>, y2, Fs);
+</pre><p>Listen to filter output</p><pre class="codeinput"><span class="comment">% sound(x, Fs)  % noisy</span>
+<span class="comment">% sound(y, Fs)  % Output of FIR notch filter</span>
+<span class="comment">% sound(y2, Fs) % Output of IIR notch filter</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2020a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Notch filtering of tonal noise
+% Null out tonal noise in a noisy speech signal.
+% Compare second-order FIR and IIR filters.
+
+%% Load data
+
+clear
+
+[s, Fs] = audioread('clean.wav');     % speech signal
+
+[x, Fs] = audioread('noisy.wav');     % speech signal with tonal noise
+
+%%
+
+sound(x, Fs)
+
+%% Plot waveforms
+
+N = length(x);
+t = (0:N-1)'/Fs;            % t : time axis
+
+figure(1)
+clf
+plot(t, s, t, x-0.1)
+legend('Clean speech', 'Speech with tonal noise')
+xlabel('Time (sec)')
+
+%%
+% plot detail
+
+figure(1)
+clf
+plot(t, s, t, x-0.1)
+xlim([0.5 0.9])
+legend('Clean speech', 'Speech with tonal noise')
+xlabel('Time (sec)')
+
+orient landscape
+print -dpdf data
+
+
+%% Make FIR notch filter
+
+fn = 500;          % frequency to null out
+
+I = sqrt(-1);
+
+b = [1 -2*cos(2*pi*fn/Fs) 1];               % filter coefficients
+a = 1;
+
+b = b/polyval(b, -1);           % make peak gain = 1
+% b = b/sum(b);               % make dc gain = 1
+
+
+
+%% Display FIR pole-zero diagram
+% The zeros are on the unit circle at angle 2*pi*fn/Fs.
+
+figure(1)
+clf
+zplane(b, a)
+title('FIR notch filter')
+
+%% Display FIR frequency response
+
+[H, om] = freqz(b, a);
+
+%%
+% Display frequency response (normalized frequency)
+
+figure(3)
+clf
+plot(om/(2*pi), abs(H))
+xlabel('Normalized frequency (cycles/sample)')
+title('Frequency response')
+
+%%
+% Display frequency response (Hz)
+
+figure(3)
+clf
+plot(om/(2*pi)*Fs, abs(H))
+xlabel('Frequency (cycles/second = Hz)')
+title('Frequency response')
+
+%% Apply FIR filter to noisy speech
+% The filter suppresses tonal noise, but it also attenuates the speech
+% waveform, leading to distortion. That is because the notch is vey wide.
+
+y = filter(b, a, x);
+
+figure(1)
+clf
+plot(t, x, t,  y - 0.1)
+xlim([0.5 0.7])
+legend('Noisy signal', 'Filtered (FIR)')
+xlabel('Time (sec)')
+
+
+%% Make IIR notch filter
+% Put poles at same angle, inside unit circle.
+
+b = [1 -2*cos(2*pi*fn/Fs) 1];        % filter coefficients
+
+r = 0.95;
+a = [1 -2*r*cos(2*pi*fn/Fs) r^2];    % filter coefficients
+
+b = b/sum(b)*sum(a);                 % make dc gain equal to 1
+
+%% Display IIR pole-zero diagram
+
+figure(1)
+clf
+zplane(b, a)
+title('IIR notch filter')
+
+%% Display IIR frequency response
+% The notch is quite narrow, not like the FIR filter.
+% Now, the filter will attenuate fewer frequencies.
+
+[H, om] = freqz(b, a);
+
+figure(2)
+clf
+plot(om/(2*pi)*Fs, abs(H))
+xlabel('Frequency (Hz)')
+title('Frequency response (IIR) filter')
+
+%% Apply IIR filter to noisy speech
+
+y2 = filter(b, a, x);
+
+figure(1)
+clf
+plot(t, x, t,  y2 - 0.1)
+legend('Noisy signal', 'Filtered (IIR)')
+% xlim([0.5 0.7])
+xlabel('Time (sec)')
+
+%% Compare FIR and IIR filtered signals
+% The output of the IIR filter preserves the shape of the speech waveform
+% better than the FIR filter.
+
+figure(1)
+clf
+plot(t, s+0.1, t, x, t,  y - 0.1, t, y2 - 0.2)
+xlim([0.5 0.7])
+legend('Clean signal','Noisy signal', 'Filtered (FIR)', 'Filtered (IIR)')
+xlabel('Time (sec)')
+title('Tonal noise suppression by notch filtering')
+
+orient tall
+print -dpdf signals
+
+%% Export audio signals as wave files
+
+audiowrite('output_FIR.wav', y, Fs);
+audiowrite('output_IIR.wav', y2, Fs);
+
+
+%%
+% Listen to filter output 
+
+% sound(x, Fs)  % noisy
+% sound(y, Fs)  % Output of FIR notch filter
+% sound(y2, Fs) % Output of IIR notch filter
+
+
+
+
+
+
+##### SOURCE END #####
+--></body></html>

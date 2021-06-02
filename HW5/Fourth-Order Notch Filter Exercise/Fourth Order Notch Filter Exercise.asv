@@ -1,0 +1,9 @@
+clear
+close all
+
+%% Fourth-Order Notch Filter Exercise
+Sampl_rt = 8000
+N_freq = 500*pi/(Sampl_rt*0.5)
+
+b = [2 -4*cos(N_freq)]
+a = []
